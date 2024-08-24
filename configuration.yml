@@ -1,0 +1,63 @@
+---
+- name: Setup Flask environment
+  hosts: deploy
+  become: true
+  remote_user: root
+  
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+      when: ansible_pkg_mgr == "apt"
+    - name: Install necessary packages for apt
+      apt:
+        name:
+          - python3-pip
+          - python3-dev
+          - build-essential
+          - python3-venv
+          - git
+          - ufw
+        state: present
+      when: ansible_pkg_mgr == "apt"
+
+
+    - name: Create a directory
+      file:
+        path: flask_dir
+        state: directory
+        mode: 0777
+        owner: ubuntu
+        group: ubuntu
+      when: ansible_pkg_mgr == "apt"
+
+    
+    - name: Remove existing flask_dir
+      file:
+        path: ~/flask_dir
+        state: absent
+      ignore_errors: yes
+      
+    - name: Clone the Git repository
+      git:
+        repo: https://github.com/timothy-toweh/flask-app-project
+        dest: ~/flask_dir/
+        version: main
+        
+    - name: Create virtual environment
+      command: python3 -m venv flask_dir/.myenv
+      args:
+        chdir: "~/"
+
+    - name: Activate virtual environment
+      command: /bin/bash -c "source flask_dir/.myenv/bin/activate"
+      args:
+        chdir: "~/"
+
+    - name: Install flask using pip
+      pip:
+        name: flask
+        executable: ~/flask_dir/.myenv/bin/pip
+        state: present
+
+   

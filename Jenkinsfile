@@ -1,60 +1,44 @@
 pipeline {
-    agent { label 'ansible-master' }
-
-    environment {
-        // Define environment variables if needed
-        INVENTORY_FILE = 'hosts.ini'
+    agent {
+        label 'ansible-master'
     }
-
+    tools {
+        git 'Default'
+    }
     stages {
-        stage('Checkout Code') {
+        stage('Echo') {
             steps {
-                // Clone your repository containing the playbooks and app code
-                checkout scm
+                sh "chmod -R 755 ${env.WORKSPACE}"
             }
         }
-
-        stage('Configure Servers') {
+        stage('Clone Repository') {
             steps {
-                // Run the Ansible playbook to configure the servers
-                ansiblePlaybook(
-                    playbook: 'configure_servers.yml',
-                    inventory: "${INVENTORY_FILE}"
-                )
+                script {
+                    // Specify the target directory
+                    def targetDir = "${env.WORKSPACE}"
+                    // Clone the repository into the specified directory
+                    dir(targetDir) {
+                        git branch: "main", url: "https://github.com/timothy-toweh/flask-app-project.git"
+                    }
+                }
             }
         }
-
-        stage('Deploy Flask App') {
+        stage('Configure servers') {
             steps {
-                // Run the Ansible playbook to deploy the Flask application
-                ansiblePlaybook(
-                    playbook: 'deploy_flask_app.yml',
-                    inventory: "${INVENTORY_FILE}"
-                )
+                sh "cd ${env.WORKSPACE}/ && ansible-playbook configuration.yml -i hosts.ini"
             }
         }
-
-        stage('Start') {
+        stage('Build the main project.py') {
             steps {
-                // Run the Ansible playbook to start the application
-                ansiblePlaybook(
-                    playbook: 'start.yml',
-                    inventory: "${INVENTORY_FILE}"
-                )
+                sh "cd ${env.WORKSPACE}/ && ansible-playbook -e 'external_yaml_file=project.py' deployment.yml -i hosts.ini"
             }
         }
     }
-
-    post {
-        success {
-            mail to: 'timothytoweh1@gmail.com',
-                 subject: 'Jenkins CI-CD Successful',
-                 body: 'Jenkins CI-CD Job was successful, YAAAY'
-        }
-        failure {
-            mail to: 'timothytoweh1@gmail.com',
-                 subject: 'Jenkins CI-CD Failed',
-                 body: 'Jenkins CI-CD job failed, sorry'
-        }
+        post{
+            always {
+                emailext body: 'Check console output at $BUILD_URL to view the results.', 
+                subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', 
+                to: 'timothytoweh1@gmail.com'
+            }
+        }     
     }
-}

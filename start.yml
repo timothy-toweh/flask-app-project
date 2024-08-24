@@ -1,7 +1,0 @@
----
-- name: Start Flask app
-  hosts: deploy
-  tasks:
-    - name: Start Flask app using flaskenv
-      command: >
-        /home/ubuntu/flaskenv/bin/python /home/ubuntu/flask-app/app.py run --host=0.0.0.0 --port=5000
