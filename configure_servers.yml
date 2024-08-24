@@ -28,20 +28,3 @@
         cmd: /home/{{ ansible_user }}/flaskenv/bin/python -m pip install --upgrade pip wheel
         creates: /home/{{ ansible_user }}/flaskenv/bin/pip
 
-    - name: Install pip packages from requirements.txt in virtual environment
-      pip:
-        requirements: /home/{{ ansible_user }}/path/to/requirements.txt
-        virtualenv: /home/{{ ansible_user }}/flaskenv
-        state: present
-
-    - name: Ensure Nginx is enabled and started
-      service:
-        name: nginx
-        state: started
-        enabled: yes
-
-  handlers:
-    - name: Restart Nginx
-      service:
-        name: nginx
-        state: restarted
