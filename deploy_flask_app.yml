@@ -23,7 +23,7 @@
       pip:
         requirements: /home/{{ ansible_user }}/flask-app-project/requirements.txt
         virtualenv: /home/{{ ansible_user }}/flaskenv
-        executable: /home/{{ ansible_user }}/flaskenv/bin/pip
+        state: present
       notify:
         - Restart Flask app
 
