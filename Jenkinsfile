@@ -33,6 +33,16 @@ pipeline {
                 )
             }
         }
+
+        stage('Start') {
+            steps {
+                // Run the Ansible playbook to start the application
+                ansiblePlaybook(
+                    playbook: 'start.yml',
+                    inventory: "${INVENTORY_FILE}"
+                )
+            }
+        }
     }
 
     post {

@@ -2,24 +2,16 @@
 - name: Activate virtual environment 
   hosts: deploy
   become: true
-  tasks: 
+  tasks:
     - name: activate virtual environment
-      shell: "source /home/ubuntu/flask-app-project/venv/bin/activate"
+      shell: "source /home/ubuntu/flask-app/venv/bin/activate"
 
-
-- name: Run flask app
+- name: Run flask app 
   hosts: deploy
-
   vars:
-    app_dir: /home/ubuntu/flask-app-project
-    
+    app_dir: /home/ubuntu/flask-app
   tasks:
     - name: run flask app
       command: python {{ app_dir }}/repository/app.py &
       async: 60
       poll: 0
-
-- name: Start Flask app
-  command: >
-    /home/ubuntu/flask-app-project/venv/bin/python /home/ubuntu/flask-app-project/app.py run --host=0.0.0.0 --port=5000
-  
