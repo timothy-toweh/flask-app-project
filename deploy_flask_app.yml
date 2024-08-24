@@ -1,0 +1,74 @@
+---
+- name: Deploy Flask App
+  hosts: deploy
+  become: yes
+
+  tasks:
+    - name: Clone Flask app repository
+      git:
+        repo: 'https://github.com/timothy-toweh/flask-app-project.git'
+        dest: /home/{{ ansible_user }}/flask-app-project
+        version: main
+
+    - name: Install required Python packages
+      pip:
+        requirements: /home/{{ ansible_user }}/flask-app-project/requirements.txt
+        virtualenv: /home/{{ ansible_user }}/flaskenv
+
+    - name: Set up systemd service for Flask app
+      copy:
+        dest: /etc/systemd/system/flaskapp.service
+        content: |
+          [Unit]
+          Description=Flask application
+          After=network.target
+
+          [Service]
+          User={{ ansible_user }}
+          Group=www-data
+          WorkingDirectory=/home/{{ ansible_user }}/flask-app-project
+          Environment="PATH=/home/{{ ansible_user }}/flaskenv/bin"
+          ExecStart=/home/{{ ansible_user }}/flaskenv/bin/python app.py
+          Restart=always
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: 
+        - Start Flask app
+
+    - name: Set up Nginx configuration for Flask app
+      copy:
+        dest: /etc/nginx/sites-available/flaskapp
+        content: |
+          server {
+              listen 80;
+              server_name {{ ansible_host }};
+
+              location / {
+                  proxy_pass http://127.0.0.1:5000;
+                  proxy_set_header Host $host;
+                  proxy_set_header X-Real-IP $remote_addr;
+                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+                  proxy_set_header X-Forwarded-Proto $scheme;
+              }
+          }
+      notify: 
+        - Reload Nginx
+
+    - name: Enable Nginx configuration
+      file:
+        src: /etc/nginx/sites-available/flaskapp
+        dest: /etc/nginx/sites-enabled/flaskapp
+        state: link
+
+  handlers:
+    - name: Start Flask app
+      systemd:
+        name: flaskapp
+        state: started
+        enabled: yes
+
+    - name: Reload Nginx
+      service:
+        name: nginx
+        state: reloaded
