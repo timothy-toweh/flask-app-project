@@ -10,7 +10,16 @@
         dest: /home/{{ ansible_user }}/flask-app-project
         version: main
 
-    
+    - name: Create a virtual environment for Python
+      command:
+        cmd: python3 -m venv /home/{{ ansible_user }}/flaskenv
+        creates: /home/{{ ansible_user }}/flaskenv
+
+    - name: Install Flask and other dependencies in virtual environment
+      pip:
+        requirements: /home/{{ ansible_user }}/flask-app-project/requirements.txt
+        virtualenv: /home/{{ ansible_user }}/flaskenv
+
     - name: Set up systemd service for Flask app
       copy:
         dest: /etc/systemd/system/flaskapp.service
@@ -24,12 +33,12 @@
           Group=www-data
           WorkingDirectory=/home/{{ ansible_user }}/flask-app-project
           Environment="PATH=/home/{{ ansible_user }}/flaskenv/bin"
-          ExecStart=/home/{{ ansible_user }}/flaskenv/bin/python app.py
+          ExecStart=/home/{{ ansible_user }}/flaskenv/bin/python /home/{{ ansible_user }}/flask-app-project/app.py
           Restart=always
 
           [Install]
           WantedBy=multi-user.target
-      notify: 
+      notify:
         - Start Flask app
 
     - name: Set up Nginx configuration for Flask app
@@ -48,7 +57,7 @@
                   proxy_set_header X-Forwarded-Proto $scheme;
               }
           }
-      notify: 
+      notify:
         - Reload Nginx
 
     - name: Enable Nginx configuration
