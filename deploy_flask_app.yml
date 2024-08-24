@@ -10,11 +10,7 @@
         dest: /home/{{ ansible_user }}/flask-app-project
         version: main
 
-    - name: Install required Python packages
-      pip:
-        requirements: /home/{{ ansible_user }}/flask-app-project/requirements.txt
-        virtualenv: /home/{{ ansible_user }}/flaskenv
-
+    
     - name: Set up systemd service for Flask app
       copy:
         dest: /etc/systemd/system/flaskapp.service
