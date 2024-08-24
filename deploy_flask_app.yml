@@ -9,16 +9,23 @@
         repo: 'https://github.com/timothy-toweh/flask-app-project.git'
         dest: /home/{{ ansible_user }}/flask-app-project
         version: main
+      notify:
+        - Restart Flask app
 
     - name: Create a virtual environment for Python
       command:
         cmd: python3 -m venv /home/{{ ansible_user }}/flaskenv
         creates: /home/{{ ansible_user }}/flaskenv
+      notify:
+        - Restart Flask app
 
     - name: Install Flask and other dependencies in virtual environment
       pip:
         requirements: /home/{{ ansible_user }}/flask-app-project/requirements.txt
         virtualenv: /home/{{ ansible_user }}/flaskenv
+        executable: /home/{{ ansible_user }}/flaskenv/bin/pip
+      notify:
+        - Restart Flask app
 
     - name: Set up systemd service for Flask app
       copy:
@@ -39,7 +46,7 @@
           [Install]
           WantedBy=multi-user.target
       notify:
-        - Start Flask app
+        - Restart Flask app
 
     - name: Set up Nginx configuration for Flask app
       copy:
@@ -65,12 +72,14 @@
         src: /etc/nginx/sites-available/flaskapp
         dest: /etc/nginx/sites-enabled/flaskapp
         state: link
+      notify:
+        - Reload Nginx
 
   handlers:
-    - name: Start Flask app
+    - name: Restart Flask app
       systemd:
         name: flaskapp
-        state: started
+        state: restarted
         enabled: yes
 
     - name: Reload Nginx
