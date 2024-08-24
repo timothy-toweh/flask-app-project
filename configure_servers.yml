@@ -3,6 +3,10 @@
   hosts: deploy
   become: yes
 
+  vars:
+    app_dir: /home/ubuntu/flask-app
+    git_hub_repo: https://github.com/timothy-toweh/flask-app-project.git 
+
   tasks:
     - name: Update apt cache
       apt:
@@ -18,13 +22,33 @@
           - nginx
         state: present
 
-    - name: Create a virtual environment for Python
-      command:
-        cmd: python3 -m venv /home/{{ ansible_user }}/flaskenv
-        creates: /home/{{ ansible_user }}/flaskenv
+    - name: Remove existing flask-app
+      file:
+        path: "{{ app_dir }}"
+        state: absent
+      ignore_errors: yes
 
-    - name: Upgrade pip and wheel in virtual environment
-      command:
-        cmd: /home/{{ ansible_user }}/flaskenv/bin/python -m pip install --upgrade pip wheel
-        creates: /home/{{ ansible_user }}/flaskenv/bin/pip
+    - name: Create flask directory for Ubuntu
+      file:
+        path: "{{ app_dir }}"
+        state: directory
+        mode: '0777'
+        owner: ubuntu
+        group: ubuntu
 
+    - name: Clone git repository
+      git: 
+        repo: "{{ git_hub_repo }}"
+        dest: "{{ app_dir }}/"
+        version: main
+
+    - name: Create virtual environment (Ubuntu)
+      command: python3 -m venv {{ app_dir }}/.myenv
+      args:
+        chdir: "{{ app_dir }}"
+
+    - name: Install Flask using pip (Ubuntu)
+      pip:
+        name: flask
+        executable: "{{ app_dir }}/.myenv/bin/pip"
+        state: present

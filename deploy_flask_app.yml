@@ -1,88 +1,25 @@
 ---
-- name: Deploy Flask App
+- name: Activate virtual environment 
   hosts: deploy
-  become: yes
+  become: true
+  tasks: 
+    - name: activate virtual environment
+      shell: "source /home/ubuntu/flask-app-project/venv/bin/activate"
 
+
+- name: Run flask app
+  hosts: deploy
+
+  vars:
+    app_dir: /home/ubuntu/flask-app-project
+    
   tasks:
-    - name: Clone Flask app repository
-      git:
-        repo: 'https://github.com/timothy-toweh/flask-app-project.git'
-        dest: /home/{{ ansible_user }}/flask-app-project
-        version: main
-      notify:
-        - Restart Flask app
+    - name: run flask app
+      command: python {{ app_dir }}/repository/app.py &
+      async: 60
+      poll: 0
 
-    - name: Create a virtual environment for Python
-      command:
-        cmd: python3 -m venv /home/{{ ansible_user }}/flaskenv
-        creates: /home/{{ ansible_user }}/flaskenv
-      notify:
-        - Restart Flask app
-
-    - name: Install Flask and other dependencies in virtual environment
-      pip:
-        requirements: /home/{{ ansible_user }}/flask-app-project/requirements.txt
-        virtualenv: /home/{{ ansible_user }}/flaskenv
-        state: present
-      notify:
-        - Restart Flask app
-
-    - name: Set up systemd service for Flask app
-      copy:
-        dest: /etc/systemd/system/flaskapp.service
-        content: |
-          [Unit]
-          Description=Flask application
-          After=network.target
-
-          [Service]
-          User={{ ansible_user }}
-          Group=www-data
-          WorkingDirectory=/home/{{ ansible_user }}/flask-app-project
-          Environment="PATH=/home/{{ ansible_user }}/flaskenv/bin"
-          ExecStart=/home/{{ ansible_user }}/flaskenv/bin/python /home/{{ ansible_user }}/flask-app-project/app.py
-          Restart=always
-
-          [Install]
-          WantedBy=multi-user.target
-      notify:
-        - Restart Flask app
-
-    - name: Set up Nginx configuration for Flask app
-      copy:
-        dest: /etc/nginx/sites-available/flaskapp
-        content: |
-          server {
-              listen 80;
-              server_name {{ ansible_host }};
-
-              location / {
-                  proxy_pass http://127.0.0.1:5000;
-                  proxy_set_header Host $host;
-                  proxy_set_header X-Real-IP $remote_addr;
-                  proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                  proxy_set_header X-Forwarded-Proto $scheme;
-              }
-          }
-      notify:
-        - Reload Nginx
-
-    - name: Enable Nginx configuration
-      file:
-        src: /etc/nginx/sites-available/flaskapp
-        dest: /etc/nginx/sites-enabled/flaskapp
-        state: link
-      notify:
-        - Reload Nginx
-
-  handlers:
-    - name: Restart Flask app
-      systemd:
-        name: flaskapp
-        state: restarted
-        enabled: yes
-
-    - name: Reload Nginx
-      service:
-        name: nginx
-        state: reloaded
+- name: Start Flask app
+  command: >
+    /home/ubuntu/flask-app-project/venv/bin/python /home/ubuntu/flask-app-project/app.py run --host=0.0.0.0 --port=5000
+  
