@@ -1,11 +1,18 @@
----
-- name: Run Flask app
-  hosts: deploy
-  become: true
-  vars:
-    app_dir: /home/ubuntu/flask-app
-  tasks:
-    - name: run flask app
-      command: "{{ app_dir }}/venv/bin/python {{ app_dir }}/repository/app.py &"
-      async: 60
-      poll: 0
+- name: Activate virtual environment and run Flask app
+  shell: |
+    source {{ app_dir }}/.myenv/bin/activate
+    FLASK_APP={{ app_dir }}/app.py FLASK_ENV=development flask run --host=0.0.0.0 --port=5000
+  args:
+    chdir: "{{ app_dir }}"
+  async: 3600
+  poll: 0
+  register: flask_run_output
+
+- name: Wait for Flask app to start
+  async_status:
+    jid: "{{ flask_run_output.ansible_job_id }}"
+  register: job_result
+  until: job_result.finished
+  retries: 30
+  delay: 10
+
