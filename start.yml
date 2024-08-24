@@ -1,12 +1,7 @@
 ---
 - name: Start Flask app
-  hosts: all
+  hosts: deploy
   tasks:
-    - name: Install specific Werkzeug version
-      pip:
-        name: werkzeug==2.0.3
-        virtualenv: /home/ubuntu/flaskenv
-
     - name: Start Flask app using flaskenv
       command: >
         /home/ubuntu/flaskenv/bin/python /home/ubuntu/flask-app/app.py run --host=0.0.0.0 --port=5000
