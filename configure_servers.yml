@@ -22,13 +22,7 @@
           - nginx
         state: present
 
-    - name: Remove existing flask-app
-      file:
-        path: "{{ app_dir }}"
-        state: absent
-      ignore_errors: yes
-
-    - name: Create flask directory for Ubuntu
+    - name: Create flask directory 
       file:
         path: "{{ app_dir }}"
         state: directory
