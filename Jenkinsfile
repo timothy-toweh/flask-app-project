@@ -34,11 +34,16 @@ pipeline {
             }
         }
     }
-        post{
-            always {
-                emailext body: 'Check console output at $BUILD_URL to view the results.', 
-                subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', 
-                to: 'timothytoweh1@gmail.com'
-            }
-        }     
+    post {
+        success {
+            mail to: 'timothytoweh1@gmail.com',
+                 subject: 'Jenkins CI-CD Successful',
+                 body: 'Jenkins CI-CD Job was successful, YAAAY'
+        }
+        failure {
+            mail to: 'timothytoweh1@gmail.com',
+                 subject: 'Jenkins CI-CD Failed',
+                 body: 'Jenkins CI-CD job failed, sorry'
+        }
     }
+}
